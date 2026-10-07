@@ -12,8 +12,8 @@ from io import BytesIO
 # -------------------------------------------------
 # Page settings
 # -------------------------------------------------
-st.set_page_config(page_title="SansEC S11 Overlay", layout="wide")
-st.title("SansEC High-Temperature S11 Overlay")
+st.set_page_config(page_title="SansEC S11 Overlay (Narrow Sweep: 90 – 105 MHz)", layout="wide")
+st.title("SansEC S11 Overlay (Narrow Sweep: 90 – 105 MHz)")
 
 # -------------------------------------------------
 # Ensure data folder exists
