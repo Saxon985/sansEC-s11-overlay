@@ -130,7 +130,7 @@ else:
 
     ax.set_xlabel("Frequency (MHz)")
     ax.set_ylabel("S11 Magnitude (dB)")
-    ax.set_title("HighTempOven S11 Overlay")
+    ax.set_title("SansEC S11 Overlay (Narrow Sweep: 90 – 105 MHz)")
     ax.grid(True, alpha=0.3)
 
     st.pyplot(fig)
