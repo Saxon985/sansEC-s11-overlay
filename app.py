@@ -3,6 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import glob
 import os
+import re
 import pandas as pd
 from matplotlib.colors import Normalize
 from matplotlib.cm import ScalarMappable
@@ -21,6 +22,19 @@ DATA_DIR = "data"
 os.makedirs(DATA_DIR, exist_ok=True)
 
 # -------------------------------------------------
+# Helper: extract temperature from filename
+# -------------------------------------------------
+def extract_temperature(filename):
+    """
+    Extracts the first number from the filename.
+    Works with both '87.3.s1p' and '30.35C.s1p'
+    """
+    match = re.search(r"[-+]?\d*\.\d+|\d+", filename)
+    if match:
+        return float(match.group())
+    return 0.0
+
+# -------------------------------------------------
 # Multiple file uploader
 # -------------------------------------------------
 uploaded_files = st.file_uploader(
@@ -37,17 +51,17 @@ if uploaded_files:
         st.success(f"Saved: {uploaded_file.name}")
 
 # -------------------------------------------------
-# Load all existing .s1p files + extract resonant frequency
+# Load all existing .s1p files
 # -------------------------------------------------
 files = sorted(
     glob.glob(os.path.join(DATA_DIR, "*.s1p")),
-    key=lambda x: float(os.path.basename(x).replace(".s1p", ""))
+    key=lambda x: extract_temperature(os.path.basename(x))
 )
 
 file_info = []
 
 for file in files:
-    temp = float(os.path.basename(file).replace(".s1p", ""))
+    temp = extract_temperature(os.path.basename(file))
     try:
         data = np.loadtxt(file, skiprows=1)
         freq_hz = data[:, 0]
@@ -64,22 +78,19 @@ for file in files:
     file_info.append({
         "Filename": os.path.basename(file),
         "Temperature (°C)": temp,
-        "Resonant Freq (MHz)": round(resonant_mhz, 4) if resonant_mhz else "Error",
-        "Min S11 (dB)": round(min_s11, 2) if min_s11 else "Error"
+        "Resonant Freq (MHz)": round(resonant_mhz, 4) if resonant_mhz is not None else "Error",
+        "Min S11 (dB)": round(min_s11, 2) if min_s11 is not None else "Error"
     })
 
 st.write(f"Currently stored files: **{len(files)}**")
 
 # -------------------------------------------------
-# Feature 1 & 3: Table of files + resonant frequencies
+# Table + Delete
 # -------------------------------------------------
 if file_info:
     df = pd.DataFrame(file_info)
     st.dataframe(df, use_container_width=True)
 
-    # -------------------------------------------------
-    # Feature 2: Delete selected files
-    # -------------------------------------------------
     st.subheader("Delete files")
     files_to_delete = st.multiselect(
         "Select files to delete",
@@ -99,12 +110,12 @@ if len(files) == 0:
 else:
     fig, ax = plt.subplots(figsize=(12, 6))
 
-    temps = [float(os.path.basename(f).replace(".s1p", "")) for f in files]
+    temps = [extract_temperature(os.path.basename(f)) for f in files]
     cmap = plt.cm.plasma
     norm = Normalize(vmin=min(temps), vmax=max(temps))
 
     for file in files:
-        temp = float(os.path.basename(file).replace(".s1p", ""))
+        temp = extract_temperature(os.path.basename(file))
         data = np.loadtxt(file, skiprows=1)
         freq_mhz = data[:, 0] / 1e6
         real = data[:, 1]
@@ -124,9 +135,7 @@ else:
 
     st.pyplot(fig)
 
-    # -------------------------------------------------
-    # Feature 4: Download the plot
-    # -------------------------------------------------
+    # Download button
     buf = BytesIO()
     fig.savefig(buf, format="png", dpi=150, bbox_inches="tight")
     st.download_button(
